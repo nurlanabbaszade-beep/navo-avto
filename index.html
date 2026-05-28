@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="NAVO-AVTO">
+<meta name="theme-color" content="#111111">
+<title>NAVO-AVTO</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--gold:#C9A84C;--dark:#111;--d2:#1a1a1a;--d3:#222;--d4:#2a2a2a;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--text:#f0f0f0;--t2:#888;--t3:#555;--ok:#2ecc71;--err:#e74c3c;--warn:#f39c12;--r:14px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--dark)}
+body{font-family:'DM Sans',sans-serif;color:var(--text);font-size:14px;overscroll-behavior:none}
+#app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+.hdr{background:var(--d2);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo{width:34px;height:34px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:var(--dark);flex-shrink:0;line-height:1.2;text-align:center}
+.hdr-info{flex:1}
+.hdr-title{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.hdr-sub{font-size:11px;color:var(--t2);margin-top:1px}
+.conn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);background:var(--d3);border:1px solid var(--border);border-radius:20px;padding:4px 10px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--t3);transition:background .3s}
+.dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.dot.err{background:var(--err)}
+
+/* SCREENS — display:none/block ilə idarə edirik, position:absolute yoxdur */
+.screens{flex:1;overflow:hidden;position:relative}
+.scr{display:none;height:100%;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.scr.active{display:block}
+
+.plabel{font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.ptitle{font-size:20px;font-weight:600;margin-bottom:14px;letter-spacing:-.3px}
+
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mcard{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:border-color .15s;user-select:none}
+.mcard:active{border-color:var(--gold)}
+.mic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:8px}
+.mcard h3{font-size:13px;font-weight:600;margin-bottom:2px}
+.mcard p{font-size:11px;color:var(--t2);line-height:1.4}
+.icr{background:rgba(243,156,18,.15);color:#f39c12}
+.icd{background:rgba(52,152,219,.15);color:#3498db}
+.icc{background:rgba(46,204,113,.15);color:var(--ok)}
+.ict{background:rgba(155,89,182,.15);color:#9b59b6}
+
+.back{display:inline-flex;align-items:center;gap:6px;background:var(--d3);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;color:var(--t2);cursor:pointer;margin-bottom:14px;font-family:'DM Sans',sans-serif;border:none}
+.back:active{background:var(--d4)}
+
+.scard{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:10px;transition:border-color .15s}
+.scard:active{border-color:var(--gold)}
+.sic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.stxt h3{font-size:14px;font-weight:600;margin-bottom:2px}
+.stxt p{font-size:11px;color:var(--t2)}
+.sarr{margin-left:auto;color:var(--t3);font-size:18px;flex-shrink:0}
+
+.scanbox{background:var(--d2);border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px 16px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .2s;user-select:none}
+.scanbox:active,.scanbox.act{border-color:var(--gold)}
+.scanbox i{font-size:30px;color:var(--gold)}
+.scanbox p{font-size:12px;color:var(--t2);margin-top:6px}
+.scanbox small{font-size:10px;color:var(--t3);margin-top:3px;display:block}
+video{width:100%;border-radius:var(--r);margin-bottom:8px;display:none}
+
+.irow{display:flex;gap:8px;margin-bottom:10px}
+.irow input{flex:1;padding:11px 13px;background:var(--d2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
+.irow input:focus{outline:none;border-color:var(--gold)}
+.irow input::placeholder{color:var(--t3)}
+.finput{width:100%;padding:10px 12px;background:var(--d2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;-webkit-appearance:none;margin-top:5px}
+.finput:focus{outline:none;border-color:var(--gold)}
+.ibtn{padding:11px 15px;background:var(--gold);color:var(--dark);border:none;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
+.ibtn:active{filter:brightness(1.1)}
+.ibtn.dk{background:var(--d3);color:var(--text);border:1px solid var(--border)}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:4px}
+.chip{background:var(--d3);border:1px solid var(--border2);border-radius:20px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:5px}
+.chipx{cursor:pointer;color:var(--t3);font-size:15px;line-height:1;padding:0 2px}
+.chipx:active{color:var(--err)}
+
+.selrow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);margin-bottom:6px}
+.selrow label{font-size:13px;color:var(--t2);cursor:pointer}
+input[type=checkbox]{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+.twrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--t2);font-weight:500;white-space:nowrap;font-family:'DM Mono',monospace;font-size:10px}
+td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.nsel{padding:5px 7px;background:var(--d3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;-webkit-appearance:none;width:100%}
+.ntxt{width:100%;padding:5px 7px;background:var(--d3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif}
+
+.abtn{width:100%;padding:13px;background:var(--gold);color:var(--dark);border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
+.abtn:active{filter:brightness(1.1)}
+.abtn.dk{background:var(--d3);color:var(--text);border:1px solid var(--border)}
+.abtn.red{background:var(--err);color:#fff}
+
+.icard{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:8px}
+.irow2{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 13px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
+.irow2:last-child{border:none}
+.ilbl{color:var(--t2);flex-shrink:0;padding-top:1px}
+.ival{font-weight:500;text-align:right;word-break:break-word;flex:1}
+.bsel{padding:5px 9px;background:var(--d3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
+
+.bdg{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.bg{background:rgba(46,204,113,.15);color:var(--ok)}
+.by{background:rgba(243,156,18,.15);color:var(--warn)}
+.br{background:rgba(231,76,60,.15);color:var(--err)}
+.bgr{background:var(--d3);color:var(--t2);border:1px solid var(--border)}
+
+.rcard{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;cursor:pointer;margin-bottom:7px;transition:border-color .15s}
+.rcard:active{border-color:var(--gold)}
+.rnum{font-size:13px;font-weight:600;font-family:'DM Mono',monospace;margin-bottom:3px}
+.rmeta{font-size:11px;color:var(--t2);margin-bottom:5px}
+
+.logitem{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:7px}
+.loghdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.logc{font-size:13px;font-weight:600}
+.logt{font-size:10px;color:var(--t2);font-family:'DM Mono',monospace}
+.logchips{display:flex;flex-wrap:wrap;gap:3px}
+.lchip{font-size:10px;font-family:'DM Mono',monospace;background:var(--d3);border:1px solid var(--border);padding:2px 7px;border-radius:5px}
+
+.dcard{background:var(--d2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.dcard-num{font-size:13px;font-weight:600;font-family:'DM Mono',monospace}
+.dcard-meta{font-size:11px;color:var(--t2);margin-top:2px}
+
+.div{height:1px;background:var(--border);margin:12px 0}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--d2);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:22px;font-size:13px;z-index:300;opacity:0;transition:all .22s;white-space:nowrap;max-width:90vw;text-align:center;pointer-events:none;border-left:3px solid var(--ok)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .22s}
+.ovl.show{opacity:1;pointer-events:all}
+.cbox{background:var(--d2);border:1px solid var(--border2);border-radius:18px 18px 0 0;padding:18px 18px 32px;width:100%;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.ovl.show .cbox{transform:translateY(0)}
+.chandle{width:32px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px}
+.cbox h3{font-size:16px;font-weight:600;margin-bottom:4px}
+.csub{font-size:12px;color:var(--t2);margin-bottom:10px}
+.cbig{font-size:44px;font-weight:700;font-family:'DM Mono',monospace;color:var(--gold);text-align:center;margin:4px 0}
+.clist{max-height:110px;overflow-y:auto;margin-bottom:12px}
+.clist div{font-size:11px;color:var(--t2);padding:2px 0;font-family:'DM Mono',monospace}
+.cbrow{display:flex;gap:8px}
+.cbtn{flex:1;padding:12px;border-radius:var(--r);border:1px solid var(--border2);cursor:pointer;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;background:var(--d3);color:var(--text);-webkit-appearance:none}
+.cbtn.ok{background:var(--gold);color:var(--dark);border-color:var(--gold)}
+
+.salert{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.salert.show{opacity:1;pointer-events:all}
+.salert-box{background:var(--d2);border:1px solid var(--border2);border-radius:18px;padding:24px 20px;width:100%;max-width:300px;text-align:center}
+.salert-icon{font-size:36px;color:var(--ok);margin-bottom:10px}
+.salert-title{font-size:12px;color:var(--t2);margin-bottom:5px}
+.salert-num{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:16px;word-break:break-all;line-height:1.3}
+.salert-ok{width:100%;padding:12px;background:var(--gold);color:var(--dark);border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+.loader{display:flex;align-items:center;gap:8px;color:var(--t2);font-size:12px;padding:12px 0}
+.spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;color:var(--t3);font-size:13px;padding:28px 0}
+::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div class="logo">NA<br>VO</div>
+    <div class="hdr-info">
+      <div class="hdr-title">NAVO-AVTO</div>
+      <div class="hdr-sub" id="hdr-sub">Yüklənir...</div>
+    </div>
+    <div class="conn"><div class="dot" id="dot"></div><span id="connlbl">...</span></div>
+  </div>
+
+  <div class="screens">
+
+    <!-- HOME -->
+    <div id="s-home" class="scr active">
+      <div class="plabel">Əməliyyat sistemi</div>
+      <div class="ptitle">Ana Səhifə</div>
+      <div class="mgrid">
+        <div class="mcard" onclick="go('return-menu')">
+          <div class="mic icr"><i class="ti ti-arrow-back-up"></i></div>
+          <h3>Geri Qaytarma</h3><p>Toplu və tək-tək</p>
+        </div>
+        <div class="mcard" onclick="go('diag-menu')">
+          <div class="mic icd"><i class="ti ti-stethoscope"></i></div>
+          <h3>Diaqnostika</h3><p>Qəbul, imtina, təhvil</p>
+        </div>
+        <div class="mcard" onclick="go('check')">
+          <div class="mic icc"><i class="ti ti-search"></i></div>
+          <h3>Sifarişi Yoxla</h3><p>Scan və ya yaz</p>
+        </div>
+        <div class="mcard" onclick="go('today')">
+          <div class="mic ict"><i class="ti ti-calendar-check"></i></div>
+          <h3>Bugün Scan Edilənlər</h3><p>Günlük log</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RETURN MENU -->
+    <div id="s-return-menu" class="scr">
+      <button class="back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Qaytarma növü</div>
+      <div class="ptitle">Geri Qaytarma</div>
+      <div class="scard" onclick="go('bulk')">
+        <div class="sic icr"><i class="ti ti-barcode"></i></div>
+        <div class="stxt"><h3>Toplu Qaytarma</h3><p>Çoxlu barkod scan et</p></div>
+        <i class="ti ti-chevron-right sarr"></i>
+      </div>
+      <div class="scard" onclick="go('single')">
+        <div class="sic icc"><i class="ti ti-scan"></i></div>
+        <div class="stxt"><h3>Tək-Tək Qaytarma</h3><p>Hər sifarişi ayrıca qəbul et</p></div>
+        <i class="ti ti-chevron-right sarr"></i>
+      </div>
+    </div>
+
+    <!-- BULK -->
+    <div id="s-bulk" class="scr">
+      <button class="back" onclick="go('return-menu');stopCam('b')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Toplu qaytarma</div>
+      <div class="ptitle">Barkod Scan</div>
+      <div class="scanbox" id="sb-b" onclick="toggleCam('b','bulk')">
+        <i class="ti ti-camera"></i>
+        <p>Kameranı aktivləşdir</p>
+        <small>Yalnız format: 0031034273701-01 (13 rəqəm-tire-2 rəqəm)</small>
+      </div>
+      <video id="vid-b" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-b" placeholder="Qutu nömrəsi əl ilə..." onkeydown="if(event.key==='Enter')addBulk()">
+        <button class="ibtn dk" onclick="addBulk()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div id="chips-b" class="chips"></div>
+      <div id="btbl" style="display:none">
+        <div class="div"></div>
+        <div class="selrow">
+          <input type="checkbox" id="selall" checked onchange="togAll(this)">
+          <label for="selall">Hamısını seç — <b id="selcnt">0</b> sifariş</label>
+        </div>
+        <div class="twrap">
+          <table>
+            <thead><tr><th></th><th>Sifariş №</th><th>Status</th><th>Qeyd</th></tr></thead>
+            <tbody id="btbody"></tbody>
+          </table>
+        </div>
+        <button class="abtn" onclick="showConfirm()"><i class="ti ti-check"></i> Qəbul et</button>
+      </div>
+    </div>
+
+    <!-- SINGLE -->
+    <div id="s-single" class="scr">
+      <button class="back" onclick="go('return-menu');stopCam('s')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Tək-tək qaytarma</div>
+      <div class="ptitle">Tək Scan</div>
+      <div class="scanbox" id="sb-s" onclick="toggleCam('s','single')">
+        <i class="ti ti-scan"></i><p>Kameranı aktivləşdir</p>
+      </div>
+      <video id="vid-s" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-s" placeholder="Qutu nömrəsi..." onkeydown="if(event.key==='Enter')doSingle()">
+        <button class="ibtn" onclick="doSingle()">Scan et</button>
+      </div>
+      <div id="sres" style="display:none">
+        <div class="icard">
+          <div class="irow2"><span class="ilbl">Sifariş №</span>
+            <span class="ival" id="snum" style="font-family:'DM Mono',monospace">—</span></div>
+          <div class="irow2"><span class="ilbl">Status</span>
+            <select class="bsel" id="sstatus" onchange="onSStatusChange()">
+              <option value="Qayıtdı" selected>Qayıtdı</option>
+              <option value="Qəbul etmədim">Qəbul etmədim</option>
+            </select>
+          </div>
+          <div class="irow2" id="snote-row">
+            <span class="ilbl">Qeyd</span>
+            <select class="bsel" id="snote" onchange="togCustomS()">
+              <option value="">Seçin...</option>
+              <option>Take Rate</option><option>Yarımçıq qayıtdı</option>
+              <option>Korlanıb</option><option>Çek yoxdur</option>
+              <option value="custom">Digər (özün yaz)</option>
+            </select>
+          </div>
+          <div id="scustom" style="display:none;padding:6px 13px 11px">
+            <input class="finput" id="sctxt" placeholder="Qeyd yazın...">
+          </div>
+        </div>
+        <div id="sinfo"></div>
+        <button class="abtn" onclick="doSingleAccept()"><i class="ti ti-check"></i> Qəbul et</button>
+      </div>
+    </div>
+
+    <!-- DIAG MENU -->
+    <div id="s-diag-menu" class="scr">
+      <button class="back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Diaqnostika</div>
+      <div class="ptitle">Diaqnostika</div>
+      <div class="scard" onclick="go('diag-check')">
+        <div class="sic icd"><i class="ti ti-stethoscope"></i></div>
+        <div class="stxt"><h3>Qəbul / İmtina</h3><p>Scan edib qərar ver</p></div>
+        <i class="ti ti-chevron-right sarr"></i>
+      </div>
+      <div class="scard" onclick="go('diag-deliver');loadDiagList()">
+        <div class="sic icr"><i class="ti ti-package-export"></i></div>
+        <div class="stxt"><h3>Diaqnostikanı Təhvil Ver</h3><p>Kuryerə göndər və ya geri qaytar</p></div>
+        <i class="ti ti-chevron-right sarr"></i>
+      </div>
+    </div>
+
+    <!-- DIAG CHECK -->
+    <div id="s-diag-check" class="scr">
+      <button class="back" onclick="go('diag-menu');stopCam('d')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Diaqnostika qəbul / imtina</div>
+      <div class="ptitle">Diaqnostika</div>
+      <div class="scanbox" id="sb-d" onclick="toggleCam('d','diag')">
+        <i class="ti ti-camera"></i><p>Kameranı aktivləşdir</p>
+      </div>
+      <video id="vid-d" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-d" placeholder="Sifariş nömrəsi..." onkeydown="if(event.key==='Enter')doDiagCheck()">
+        <button class="ibtn" onclick="doDiagCheck()">Yoxla</button>
+      </div>
+      <div id="dres"></div>
+    </div>
+
+    <!-- DIAG DELIVER -->
+    <div id="s-diag-deliver" class="scr">
+      <button class="back" onclick="go('diag-menu');stopCam('dd')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Diaqnostika təhvil</div>
+      <div class="ptitle">Diaqnostikanı Təhvil Ver</div>
+      <div class="scanbox" id="sb-dd" onclick="toggleCam('dd','diag-deliver')">
+        <i class="ti ti-camera"></i><p>Kameranı aktivləşdir</p>
+      </div>
+      <video id="vid-dd" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-dd" placeholder="Sifariş nömrəsi..." onkeydown="if(event.key==='Enter')addDiagItem()">
+        <button class="ibtn dk" onclick="addDiagItem()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div class="plabel">Diaqnostikadakı sifarişlər</div>
+      <div id="dlist"></div>
+      <div id="dsel-actions" style="display:none;margin-top:8px">
+        <div class="div"></div>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:8px">Seçilmiş sifarişlər üçün:</p>
+        <button class="abtn" style="margin-top:0;margin-bottom:8px" onclick="doDiagDeliver('deliver')">
+          <i class="ti ti-truck"></i> Kuriyerə Təhvil Ver — "Diaqnostika getdi"
+        </button>
+        <button class="abtn dk" onclick="doDiagDeliver('return')">
+          <i class="ti ti-arrow-back"></i> Geri Qaytarma — "Diaqnostika qaldı"
+        </button>
+      </div>
+    </div>
+
+    <!-- CHECK -->
+    <div id="s-check" class="scr">
+      <button class="back" onclick="go('home');stopCam('c')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Axtarış</div>
+      <div class="ptitle">Sifarişi Yoxla</div>
+      <div class="scanbox" id="sb-c" onclick="toggleCam('c','check')">
+        <i class="ti ti-camera"></i><p>Kameranı aktivləşdir</p>
+      </div>
+      <video id="vid-c" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-check" placeholder="Nömrə, məhsul, satıcı..." onkeydown="if(event.key==='Enter')doCheck()">
+        <button class="ibtn" onclick="doCheck()">Axtar</button>
+      </div>
+      <div id="checkres"></div>
+    </div>
+
+    <!-- TODAY -->
+    <div id="s-today" class="scr">
+      <button class="back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Günlük log</div>
+      <div class="ptitle">Bugün Scan Edilənlər</div>
+      <div id="todayres"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="ovl" id="ovl">
+  <div class="cbox">
+    <div class="chandle"></div>
+    <h3>Təsdiqlə</h3>
+    <div class="csub">Sheets-ə yazılacaq</div>
+    <div class="cbig" id="ccnt">0</div>
+    <div class="clist" id="clist"></div>
+    <div class="cbrow">
+      <button class="cbtn" onclick="closeOvl()">Ləğv et</button>
+      <button class="cbtn ok" onclick="doAccept()">Təsdiqlə</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN ALERT -->
+<div class="salert" id="salert">
+  <div class="salert-box">
+    <div class="salert-icon"><i class="ti ti-circle-check"></i></div>
+    <div class="salert-title">Scan edildi</div>
+    <div class="salert-num" id="salert-num">—</div>
+    <button class="salert-ok" onclick="closeScanAlert()">OK</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+<script>
+var API='https://script.google.com/macros/s/AKfycbzS6RkUEpt4wQVojr7DBORfd6o74A6opPlRb0qMiUDaeApqf531PiWD_5qEt4fGQJkpOA/exec';
+var cur='home';
+var bulk=[];
+var diagList=[];
+var diagSel=[];
+var logs=[];
+var cam={b:false,s:false,d:false,dd:false,c:false};
+var scanCb=null;
+
+try{logs=JSON.parse(localStorage.getItem('navo_logs')||'[]')}catch(e){}
+function saveLogs(){try{localStorage.setItem('navo_logs',JSON.stringify(logs))}catch(e){}}
+
+// PING
+fetch(API+'?action=ping').then(function(r){return r.json()}).then(function(){
+  document.getElementById('dot').className='dot ok';
+  document.getElementById('connlbl').textContent='Qoşulub';
+  document.getElementById('hdr-sub').textContent='Google Sheets ilə sinxron';
+}).catch(function(){
+  document.getElementById('dot').className='dot err';
+  document.getElementById('connlbl').textContent='Oflayn';
+  document.getElementById('hdr-sub').textContent='Bağlantı yoxdur';
+});
+
+// NAVİGASİYA — sadə display:none/block
+function go(sc){
+  // kameraları saxla
+  var camMap={'bulk':'b','single':'s','diag-check':'d','diag-deliver':'dd','check':'c'};
+  if(camMap[cur])stopCam(camMap[cur]);
+  document.getElementById('s-'+cur).classList.remove('active');
+  document.getElementById('s-'+sc).classList.add('active');
+  cur=sc;
+  if(sc==='today')renderToday();
+  // scroll-u sıfırla
+  var el=document.getElementById('s-'+sc);
+  if(el)el.scrollTop=0;
+}
+
+function toast(msg,col){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderLeftColor=col||'var(--ok)';
+  t.classList.add('show');clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show')},2800);
+}
+
+// SCAN ALERT
+function showScanAlert(num,cb){
+  document.getElementById('salert-num').textContent=num+'\nsifariş nömrəsi scan edildi';
+  document.getElementById('salert').classList.add('show');
+  scanCb=cb||null;
+}
+function closeScanAlert(){
+  document.getElementById('salert').classList.remove('show');
+  if(scanCb){var f=scanCb;scanCb=null;f();}
+}
+
+// BARKOD VALİDASİYA — məhz 13 rəqəm + tire + 2 rəqəm
+// Format: DDDDDDDDDDDDD-DD (məs: 0031034273701-01)
+function isValidBarcode(code){
+  return /^\d{13}-\d{2}$/.test(code.trim());
+}
+
+function parseNum(raw){
+  if(!raw)return'';
+  var s=raw.trim();
+  if(isValidBarcode(s)){
+    // Tirədən əvvəl 13 rəqəm, önündəki 0-ları sil
+    var part=s.split('-')[0];
+    return part.replace(/^0+/,'')||part;
+  }
+  // Əl ilə yazılıb — rəqəm hissəsini götür
+  return s.replace(/\D/g,'').replace(/^0+/,'')||s;
+}
+
+// KAMERA
+function toggleCam(k,mode){
+  if(cam[k]){stopCam(k);return;}
+  var vid=document.getElementById('vid-'+k);
+  var box=document.getElementById('sb-'+k);
+  if(!vid||!box)return;
+  box.style.display='none';vid.style.display='block';cam[k]=true;
+  if(typeof Quagga==='undefined'){toast('Kamera kitabxanası yüklənmədi','var(--err)');stopCam(k);return;}
+  Quagga.init({
+    inputStream:{type:'LiveStream',target:vid,constraints:{facingMode:'environment',width:640,height:480}},
+    decoder:{readers:['code_128_reader','ean_reader','code_39_reader']},
+    locate:true
+  },function(err){
+    if(err){toast('Kamera açılmadı','var(--err)');stopCam(k);return;}
+    Quagga.start();
+    var last='';
+    Quagga.onDetected(function(d){
+      var code=d.codeResult.code;
+      // YALNIZ düzgün format
+      if(!isValidBarcode(code))return;
+      // Təkrar scan etmə (2 saniyə)
+      if(code===last)return;
+      last=code;setTimeout(function(){last=''},2000);
+      var num=parseNum(code);
+      if(mode==='bulk'){
+        showScanAlert(num,function(){addBulkCode(code);});
+      }else if(mode==='single'){
+        stopCam(k);
+        document.getElementById('inp-s').value=code;
+        showScanAlert(num,function(){doSingle();});
+      }else if(mode==='diag'){
+        stopCam(k);
+        document.getElementById('inp-d').value=num;
+        showScanAlert(num,function(){doDiagCheck();});
+      }else if(mode==='diag-deliver'){
+        stopCam(k);
+        document.getElementById('inp-dd').value=num;
+        showScanAlert(num,function(){addDiagItem();});
+      }else if(mode==='check'){
+        stopCam(k);
+        document.getElementById('inp-check').value=num;
+        showScanAlert(num,function(){doCheck();});
+      }
+    });
+  });
+}
+
+function stopCam(k){
+  if(!cam[k])return;cam[k]=false;
+  if(typeof Quagga!=='undefined'){try{Quagga.stop()}catch(e){}}
+  var vid=document.getElementById('vid-'+k);
+  var box=document.getElementById('sb-'+k);
+  if(vid){vid.style.display='none';
+    try{if(vid.srcObject){vid.srcObject.getTracks().forEach(function(t){t.stop()});vid.srcObject=null}}catch(e){}}
+  if(box)box.style.display='block';
+}
+
+// ── BULK ─────────────────────────────────────────────────────────────
+function addBulkCode(raw){
+  var num=parseNum(raw);
+  if(!num)return;
+  // TƏKRAR YOXLA
+  if(bulk.find(function(x){return x.num===num})){
+    toast(num+' artıq siyahıdadır','var(--warn)');return;
+  }
+  bulk.push({num:num,status:'Qayıtdı',note:'',checked:true});
+  renderBulk();
+}
+
+function addBulk(){
+  var v=document.getElementById('inp-b').value.trim();
+  if(!v){toast('Nömrə daxil edin','var(--err)');return;}
+  var num=parseNum(v);
+  if(!num){toast('Yanlış format','var(--err)');return;}
+  if(bulk.find(function(x){return x.num===num})){toast(num+' artıq siyahıdadır','var(--warn)');document.getElementById('inp-b').value='';return;}
+  showScanAlert(num,function(){addBulkCode(v);});
+  document.getElementById('inp-b').value='';
+}
+
+function renderBulk(){
+  var chips=document.getElementById('chips-b');
+  var tbl=document.getElementById('btbl');
+  var tbody=document.getElementById('btbody');
+  chips.innerHTML=bulk.map(function(o,i){
+    return '<div class="chip">'+
+    '<i class="ti ti-check" style="color:var(--ok);font-size:11px"></i>'+
+    '<span style="font-family:\'DM Mono\',monospace;font-size:11px">'+o.num+'</span>'+
+    '<span class="chipx" onclick="rmBulk('+i+')">×</span></div>';
+  }).join('');
+  if(!bulk.length){tbl.style.display='none';return;}
+  tbl.style.display='block';
+  document.getElementById('selcnt').textContent=bulk.filter(function(x){return x.checked}).length;
+  tbody.innerHTML=bulk.map(function(o,i){
+    var isRefuse=o.status==='Qəbul etmədim';
+    return '<tr>'+
+    '<td><input type="checkbox" '+(o.checked?'checked':'')+' onchange="bulk['+i+'].checked=this.checked;updSel()"></td>'+
+    '<td style="font-family:\'DM Mono\',monospace;font-size:11px;font-weight:600">'+o.num+'</td>'+
+    '<td><select class="nsel" onchange="onBulkStatusChange('+i+',this.value)">'+
+      '<option value="Qayıtdı" '+(o.status==='Qayıtdı'?'selected':'')+'>Qayıtdı</option>'+
+      '<option value="Qəbul etmədim" '+(isRefuse?'selected':'')+'>Qəbul etmədim</option>'+
+    '</select></td>'+
+    '<td>'+(isRefuse
+      ? '<input class="ntxt" placeholder="Səbəb..." oninput="bulk['+i+'].note=this.value" value="'+(o.note||'')+'">'
+      : '<select class="nsel" onchange="bulk['+i+'].note=this.value">'+
+        '<option value="">—</option>'+
+        '<option '+(o.note==='Take Rate'?'selected':'')+'>Take Rate</option>'+
+        '<option '+(o.note==='Yarımçıq qayıtdı'?'selected':'')+'>Yarımçıq qayıtdı</option>'+
+        '<option '+(o.note==='Korlanıb'?'selected':'')+'>Korlanıb</option>'+
+        '<option '+(o.note==='Çek yoxdur'?'selected':'')+'>Çek yoxdur</option>'+
+        '<option '+(o.note==='Digər'?'selected':'')+'>Digər</option>'+
+        '</select>'
+    )+'</td></tr>';
+  }).join('');
+}
+
+function onBulkStatusChange(i,val){
+  bulk[i].status=val;bulk[i].note='';renderBulk();
+}
+function rmBulk(i){bulk.splice(i,1);renderBulk();}
+function updSel(){document.getElementById('selcnt').textContent=bulk.filter(function(x){return x.checked}).length;}
+function togAll(cb){bulk.forEach(function(o){o.checked=cb.checked});renderBulk();}
+
+function showConfirm(){
+  var sel=bulk.filter(function(o){return o.checked});
+  if(!sel.length){toast('Heç bir sifariş seçilməyib','var(--err)');return;}
+  document.getElementById('ccnt').textContent=sel.length;
+  document.getElementById('clist').innerHTML=sel.map(function(o){
+    return '<div><span style="color:var(--ok)">✓</span> '+o.num+' — '+o.status+(o.note?' ('+o.note+')':'')+'</div>';
+  }).join('');
+  document.getElementById('ovl').classList.add('show');
+}
+function closeOvl(){document.getElementById('ovl').classList.remove('show');}
+
+function doAccept(){
+  closeOvl();
+  var sel=bulk.filter(function(o){return o.checked});
+  toast('Göndərilir...','var(--warn)');
+  callPost({action:'writeReturns',orders:sel},function(r){
+    if(r&&r.success){
+      toast(r.message||sel.length+' sifariş qeydə alındı ✓');
+      addLog(sel);bulk=[];renderBulk();go('home');
+    }else toast('Xəta: '+(r&&r.error||'bilinmir'),'var(--err)');
+  });
+}
+
+// ── SINGLE ───────────────────────────────────────────────────────────
+function onSStatusChange(){
+  var v=document.getElementById('sstatus').value;
+  var row=document.getElementById('snote-row');
+  var cw=document.getElementById('scustom');
+  if(v==='Qəbul etmədim'){
+    row.innerHTML='<span class="ilbl">Səbəb</span>'+
+    '<input class="finput" id="refuse-txt" placeholder="Səbəbi özün yaz..." style="flex:1;margin-left:8px;margin-top:0">';
+    if(cw)cw.style.display='none';
+  }else{
+    row.innerHTML='<span class="ilbl">Qeyd</span>'+
+    '<select class="bsel" id="snote" onchange="togCustomS()">'+
+    '<option value="">Seçin...</option><option>Take Rate</option><option>Yarımçıq qayıtdı</option>'+
+    '<option>Korlanıb</option><option>Çek yoxdur</option><option value="custom">Digər (özün yaz)</option>'+
+    '</select>';
+    if(cw)cw.style.display='none';
+  }
+}
+function togCustomS(){
+  var sn=document.getElementById('snote');
+  var cw=document.getElementById('scustom');
+  if(sn&&cw)cw.style.display=sn.value==='custom'?'block':'none';
+}
+
+function doSingle(){
+  var raw=document.getElementById('inp-s').value.trim();
+  if(!raw){toast('Nömrə daxil edin','var(--err)');return;}
+  var num=parseNum(raw);
+  document.getElementById('snum').textContent=num;
+  document.getElementById('sstatus').value='Qayıtdı';
+  onSStatusChange();
+  document.getElementById('sres').style.display='block';
+  document.getElementById('sinfo').innerHTML='<div class="loader"><div class="spin"></div>Məlumat yüklənir...</div>';
+  callGet('checkOrder&orderNum='+encodeURIComponent(num),function(r){
+    if(r&&r.found){
+      var o=r.order;
+      var mp=o.mehsullar&&o.mehsullar.length
+        ?o.mehsullar.map(function(m,i){return '<div>'+(i+1)+'. '+m+'</div>'}).join(''):'—';
+      document.getElementById('sinfo').innerHTML='<div class="icard" style="margin-top:8px">'+
+        ir('Məhsullar','<div style="text-align:right;font-size:12px">'+mp+'</div>')+
+        ir('Miqdar',o.miqdar||'—')+
+        ir('Qiymət',o.qiymet?(o.qiymet+' AZN'):'—')+
+        ir('Tarix',o.tarix||'—')+
+        ir('Cari Status','<span class="bdg '+(o.qaytardi==='Qayıtdı'?'bg':o.qaytardi?'by':'bgr')+'">'+(o.qaytardi||o.status||'—')+'</span>')+
+        ir('Ödəniş Bank',o.odenis||'—')+
+        ir('Bank Qiymət',o.bankQiymet?(o.bankQiymet+' AZN'):'—')+
+      '</div>';
+    }else{
+      document.getElementById('sinfo').innerHTML='';
+    }
+  });
+}
+
+function doSingleAccept(){
+  var num=document.getElementById('snum').textContent;
+  var status=document.getElementById('sstatus').value||'Qayıtdı';
+  var note='';
+  if(status==='Qəbul etmədim'){
+    var rt=document.getElementById('refuse-txt');note=rt?rt.value:'';
+  }else{
+    var sn=document.getElementById('snote');
+    if(sn){note=sn.value==='custom'?(document.getElementById('sctxt')||{value:''}).value:sn.value;}
+  }
+  toast('Göndərilir...','var(--warn)');
+  callPost({action:'writeReturns',orders:[{num:num,status:status,note:note}]},function(r){
+    if(r&&r.success){
+      toast(r.message||num+' qeydə alındı ✓');
+      addLog([{num:num,status:status,note:note}]);
+      document.getElementById('sres').style.display='none';
+      document.getElementById('inp-s').value='';
+    }else toast('Xəta: '+(r&&r.error||'bilinmir'),'var(--err)');
+  });
+}
+
+// ── DİAQNOSTİKA ──────────────────────────────────────────────────────
+function doDiagCheck(){
+  var raw=document.getElementById('inp-d').value.trim();
+  var res=document.getElementById('dres');
+  if(!raw)return;
+  var num=parseNum(raw)||raw;
+  res.innerHTML='<div class="loader"><div class="spin"></div>Yüklənir...</div>';
+  callGet('checkOrder&orderNum='+encodeURIComponent(num),function(r){
+    if(r&&r.found){
+      var o=r.order;
+      var mp=o.mehsullar&&o.mehsullar.length
+        ?o.mehsullar.map(function(m,i){return '<div>'+(i+1)+'. '+m+'</div>'}).join(''):'—';
+      res.innerHTML='<div class="icard">'+
+        ir('Sifariş №','<span style="font-family:\'DM Mono\',monospace">'+o.num+'</span>')+
+        ir('Məhsullar','<div style="text-align:right;font-size:12px">'+mp+'</div>')+
+        ir('Qiymət',o.qiymet?(o.qiymet+' AZN'):'—')+
+        ir('Tarix',o.tarix||'—')+
+        ir('Cari Status','<span class="bdg '+(o.qaytardi?'by':'bgr')+'">'+(o.qaytardi||o.status||'—')+'</span>')+
+      '</div>'+
+      '<button class="abtn" style="margin-top:10px" onclick="showDiagAccept(\''+o.num+'\')">'+
+        '<i class="ti ti-stethoscope"></i> Diaqnostikaya qəbul et</button>'+
+      '<button class="abtn dk" style="margin-top:8px" onclick="showDiagRefuse(\''+o.num+'\')">'+
+        '<i class="ti ti-x"></i> Diaqnostikadan imtina et</button>';
+    }else if(r){
+      res.innerHTML='<div class="icard"><div class="irow2"><span style="color:var(--warn)">Sifariş tapılmadı: '+num+'</span></div></div>';
+    }else{
+      res.innerHTML='<div class="icard"><div class="irow2"><span style="color:var(--err)">Xəta baş verdi</span></div></div>';
+    }
+  });
+}
+
+function showDiagAccept(num){
+  var res=document.getElementById('dres');
+  res.innerHTML=res.innerHTML+
+  '<div class="icard" style="margin-top:10px">'+
+    '<div class="irow2"><span class="ilbl">Problemi qeyd et</span></div>'+
+    '<div style="padding:6px 13px 11px"><input class="finput" id="diag-note" placeholder="Problemi yazın..."></div>'+
+  '</div>'+
+  '<button class="abtn" style="margin-top:8px" onclick="submitDiag(\''+num+'\',true)">Təsdiqlə — Qəbul et</button>';
+}
+
+function showDiagRefuse(num){
+  var res=document.getElementById('dres');
+  res.innerHTML=res.innerHTML+
+  '<div class="icard" style="margin-top:10px">'+
+    '<div class="irow2"><span class="ilbl">İmtina səbəbi</span></div>'+
+    '<div style="padding:6px 13px 11px"><input class="finput" id="diag-refuse" placeholder="Səbəbi yazın..."></div>'+
+  '</div>'+
+  '<button class="abtn red" style="margin-top:8px" onclick="submitDiag(\''+num+'\',false)">Təsdiqlə — İmtina et</button>';
+}
+
+function submitDiag(num,accepted){
+  var el=accepted?document.getElementById('diag-note'):document.getElementById('diag-refuse');
+  var note=el?el.value:'';
+  toast('Göndərilir...','var(--warn)');
+  callPost({action:'writeDiag',orderNum:num,note:note,accepted:accepted},function(r){
+    if(r&&r.success){
+      toast(accepted?'Diaqnostikaya qəbul edildi ✓':'Diaqnostikadan imtina edildi ✓');
+      document.getElementById('dres').innerHTML='';
+      document.getElementById('inp-d').value='';
+    }else toast('Xəta: '+(r&&r.error||'bilinmir'),'var(--err)');
+  });
+}
+
+// ── DİAQ TƏHVİL ─────────────────────────────────────────────────────
+function loadDiagList(){
+  diagList=[];diagSel=[];
+  document.getElementById('dlist').innerHTML='<div class="loader"><div class="spin"></div>Yüklənir...</div>';
+  document.getElementById('dsel-actions').style.display='none';
+  callGet('getDiagList',function(r){
+    if(r&&r.results&&r.results.length){
+      diagList=r.results;renderDiagList();
+    }else{
+      document.getElementById('dlist').innerHTML='<p class="empty">Diaqnostikada sifariş yoxdur</p>';
+    }
+  });
+}
+
+function renderDiagList(){
+  var el=document.getElementById('dlist');
+  el.innerHTML=diagList.map(function(o){
+    var chk=diagSel.indexOf(o.num)!==-1;
+    return '<div class="dcard">'+
+    '<input type="checkbox" '+(chk?'checked':'')+' onchange="togDiagSel(\''+o.num+'\',this.checked)">'+
+    '<div><div class="dcard-num">'+o.num+'</div>'+
+    '<div class="dcard-meta">'+(o.mehsullar&&o.mehsullar[0]?o.mehsullar[0]+' · ':'')+o.diagTarix+'</div>'+
+    '</div></div>';
+  }).join('');
+  document.getElementById('dsel-actions').style.display=diagSel.length?'block':'none';
+}
+
+function togDiagSel(num,chk){
+  if(chk){if(diagSel.indexOf(num)===-1)diagSel.push(num);}
+  else{diagSel=diagSel.filter(function(x){return x!==num});}
+  document.getElementById('dsel-actions').style.display=diagSel.length?'block':'none';
+}
+
+function addDiagItem(){
+  var raw=document.getElementById('inp-dd').value.trim();
+  if(!raw)return;
+  var num=parseNum(raw)||raw;
+  document.getElementById('inp-dd').value='';
+  if(diagList.find(function(x){return x.num===num})){
+    if(diagSel.indexOf(num)===-1)diagSel.push(num);
+    renderDiagList();return;
+  }
+  callGet('checkOrder&orderNum='+encodeURIComponent(num),function(r){
+    if(r&&r.found&&r.order.qaytardi==='Diaqnostika'){
+      diagList.push({num:num,diagTarix:'',mehsullar:r.order.mehsullar||[]});
+      if(diagSel.indexOf(num)===-1)diagSel.push(num);
+      renderDiagList();toast(num+' əlavə edildi');
+    }else{
+      toast(num+' Diaqnostika statusunda deyil','var(--warn)');
+    }
+  });
+}
+
+function doDiagDeliver(type){
+  if(!diagSel.length){toast('Sifariş seçilməyib','var(--err)');return;}
+  var count=diagSel.length;var done=0;var errs=[];
+  toast('Göndərilir...','var(--warn)');
+  diagSel.slice().forEach(function(num){
+    callPost({action:'writeDiagDeliver',orderNum:num,type:type},function(r){
+      done++;if(!r||!r.success)errs.push(num);
+      if(done===count){
+        var msg=count+' sifariş "'+(type==='deliver'?'Diaqnostika getdi':'Diaqnostika qaldı')+'" edildi ✓';
+        if(errs.length)msg=errs.length+' xəta: '+errs.join(', ');
+        toast(msg,errs.length?'var(--err)':'var(--ok)');
+        diagList=diagList.filter(function(x){return diagSel.indexOf(x.num)===-1});
+        diagSel=[];renderDiagList();
+      }
+    });
+  });
+}
+
+// ── SİFARİŞİ YOXLA ──────────────────────────────────────────────────
+function doCheck(){
+  var q=document.getElementById('inp-check').value.trim();
+  var res=document.getElementById('checkres');
+  if(!q)return;
+  var num=parseNum(q)||q;
+  res.innerHTML='<div class="loader"><div class="spin"></div>Axtarılır...</div>';
+  callGet('checkOrder&orderNum='+encodeURIComponent(num),function(r){
+    if(r&&r.found){
+      renderCheckResults([r.order],res);
+    }else{
+      callGet('searchOrder&query='+encodeURIComponent(num),function(r2){
+        if(r2&&r2.results&&r2.results.length)renderCheckResults(r2.results,res,r2.count);
+        else res.innerHTML='<p class="empty">Nəticə tapılmadı</p>';
+      });
+    }
+  });
+}
+
+function renderCheckResults(list,res,count){
+  res.innerHTML=(count&&count>1?'<p style="font-size:11px;color:var(--t3);margin-bottom:6px">'+count+' nəticə</p>':'')+
+  list.map(function(o){
+    return '<div class="rcard" onclick="jumpToDetail(\''+o.num+'\')">'+
+    '<div class="rnum">'+o.num+'</div>'+
+    '<div class="rmeta">'+[o.mehsullar&&o.mehsullar[0],o.tarix,o.satici].filter(Boolean).join(' · ')+'</div>'+
+    '<span class="bdg '+(o.qaytardi==='Qayıtdı'?'bg':o.qaytardi?'by':'bgr')+'">'+(o.status||o.qaytardi||'Aktiv')+'</span>'+
+    (o.qeyd?'<span class="bdg bgr" style="margin-left:4px">'+o.qeyd+'</span>':'')+
+    '</div>';
+  }).join('');
+}
+
+function jumpToDetail(num){
+  document.getElementById('inp-d').value=num;
+  go('diag-check');doDiagCheck();
+}
+
+function ir(l,v){
+  return '<div class="irow2"><span class="ilbl">'+l+'</span><span class="ival">'+v+'</span></div>';
+}
+
+// ── LOG ──────────────────────────────────────────────────────────────
+function addLog(orders){
+  var log={time:new Date().toLocaleString('az-AZ'),count:orders.length,
+    orders:orders.map(function(o){return{num:o.num,status:o.status||'Qayıtdı',note:o.note||''}})};
+  logs.unshift(log);if(logs.length>500)logs=logs.slice(0,500);saveLogs();
+}
+
+function renderToday(){
+  var el=document.getElementById('todayres');
+  if(!logs.length){el.innerHTML='<p class="empty">Hələ heç nə scan edilməyib</p>';return;}
+  var today=new Date().toLocaleDateString('az-AZ');
+  var tl=logs.filter(function(l){return l.time&&l.time.startsWith(today)});
+  var show=tl.length?tl:logs.slice(0,15);
+  var lbl=tl.length?'':'<p style="font-size:11px;color:var(--t3);margin-bottom:8px">Son 15 əməliyyat</p>';
+  el.innerHTML=lbl+show.map(function(l){
+    return '<div class="logitem"><div class="loghdr">'+
+    '<span class="logc">'+l.count+' sifariş</span>'+
+    '<span class="logt">'+l.time+'</span></div>'+
+    '<div class="logchips">'+l.orders.map(function(o){
+      return '<span class="lchip">'+o.num+' '+o.status+(o.note?' · '+o.note:'')+'</span>';
+    }).join('')+'</div></div>';
+  }).join('');
+}
+
+// ── API ───────────────────────────────────────────────────────────────
+function callPost(payload,cb){
+  fetch(API,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'application/json'}})
+  .then(function(r){return r.json()}).then(cb)
+  .catch(function(){
+    fetch(API,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'})
+    .then(function(){cb({success:true,message:'Göndərildi ✓'})})
+    .catch(function(){cb({success:false,error:'Bağlantı xətası'})});
+  });
+}
+function callGet(params,cb){
+  fetch(API+'?action='+params)
+  .then(function(r){return r.json()}).then(cb)
+  .catch(function(){cb(null)});
+}
+</script>
+</body>
+</html>
