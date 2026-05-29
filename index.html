@@ -61,7 +61,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);font-size:14px;overscrol
 .scanbox i{font-size:30px;color:var(--gold)}
 .scanbox p{font-size:12px;color:var(--t2);margin-top:6px}
 .scanbox small{font-size:10px;color:var(--t3);margin-top:3px;display:block}
-video{width:100%;border-radius:var(--r);margin-bottom:8px;display:none}
+video{width:100%;height:280px;object-fit:cover;border-radius:var(--r);margin-bottom:8px;display:none;background:#000}
 
 .irow{display:flex;gap:8px;margin-bottom:10px}
 .irow input{flex:1;padding:11px 13px;background:var(--d2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
@@ -218,7 +218,7 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
       <div class="scanbox" id="sb-b" onclick="toggleCam('b','bulk')">
         <i class="ti ti-camera"></i>
         <p>Kameranı aktivləşdir</p>
-        <small>Yalnız format: 0031034273701-01 (13 rəqəm-tire-2 rəqəm)</small>
+        <small>Barkodu kameraya yaxınlaşdırın · parıltı varsa İşıq düyməsini yandırın</small>
       </div>
       <video id="vid-b" playsinline autoplay muted></video>
       <div class="irow">
@@ -472,17 +472,97 @@ function parseNum(raw){
   return s.replace(/\D/g,'').replace(/^0+/,'')||s;
 }
 
-// KAMERA
+// KAMERA — Google ML (BarcodeDetector) əsas, Quagga ehtiyat
+var camStream=null;
+var camLoop=null;
+var camTorch={};
+
+function handleScan(code,k,mode){
+  if(!isValidBarcode(code))return false;
+  var num=parseNum(code);
+  try{if(navigator.vibrate)navigator.vibrate(120)}catch(e){}
+  if(mode==='bulk'){
+    if(bulk.find(function(x){return x.num===num})){toast(num+' artıq var','var(--warn)');return false;}
+    showScanAlert(num,function(){addBulkCode(code);});
+  }else if(mode==='single'){
+    stopCam(k);document.getElementById('inp-s').value=code;
+    showScanAlert(num,function(){doSingle();});
+  }else if(mode==='diag'){
+    stopCam(k);document.getElementById('inp-d').value=num;
+    showScanAlert(num,function(){doDiagCheck();});
+  }else if(mode==='diag-deliver'){
+    stopCam(k);document.getElementById('inp-dd').value=num;
+    showScanAlert(num,function(){addDiagItem();});
+  }else if(mode==='check'){
+    stopCam(k);document.getElementById('inp-check').value=num;
+    showScanAlert(num,function(){doCheck();});
+  }
+  return true;
+}
+
 function toggleCam(k,mode){
   if(cam[k]){stopCam(k);return;}
   var vid=document.getElementById('vid-'+k);
   var box=document.getElementById('sb-'+k);
   if(!vid||!box)return;
   box.style.display='none';vid.style.display='block';cam[k]=true;
-  if(typeof Quagga==='undefined'){toast('Kamera kitabxanası yüklənmədi','var(--err)');stopCam(k);return;}
+
+  // Yüksək çözünürlük + arxa kamera (sıx barkodlar üçün vacib)
+  var constraints={
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920},
+      height:{ideal:1080},
+      focusMode:'continuous'
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream){
+    camStream=stream;
+    vid.srcObject=stream;
+    vid.setAttribute('playsinline',true);
+    vid.play();
+    addTorchButton(k,stream);
+    if('BarcodeDetector' in window){
+      startNativeDetector(vid,k,mode);
+    }else{
+      startQuagga(vid,k,mode);
+    }
+  }).catch(function(err){
+    toast('Kamera açılmadı: icazə verin','var(--err)');
+    stopCam(k);
+  });
+}
+
+function startNativeDetector(vid,k,mode){
+  var detector=new BarcodeDetector({formats:['code_128','ean_13','code_39','codabar','itf','ean_8']});
+  var last='';
+  var busy=false;
+  camLoop=setInterval(function(){
+    if(busy||!cam[k])return;
+    busy=true;
+    detector.detect(vid).then(function(codes){
+      busy=false;
+      for(var i=0;i<codes.length;i++){
+        var code=codes[i].rawValue;
+        if(!isValidBarcode(code))continue;
+        if(code===last)continue;
+        last=code;setTimeout(function(){last=''},2000);
+        handleScan(code,k,mode);
+        break;
+      }
+    }).catch(function(){busy=false;});
+  },150);
+}
+
+function startQuagga(vid,k,mode){
+  if(typeof Quagga==='undefined'){toast('Scan mühərriki yüklənmədi','var(--err)');return;}
   Quagga.init({
-    inputStream:{type:'LiveStream',target:vid,constraints:{facingMode:'environment',width:640,height:480}},
-    decoder:{readers:['code_128_reader','ean_reader','code_39_reader']},
+    inputStream:{type:'LiveStream',target:vid,constraints:{facingMode:'environment',width:1280,height:720}},
+    decoder:{readers:['code_128_reader','ean_reader','code_39_reader','i2of5_reader']},
+    locator:{patchSize:'large',halfSample:false},
+    numOfWorkers:navigator.hardwareConcurrency||2,
+    frequency:10,
     locate:true
   },function(err){
     if(err){toast('Kamera açılmadı','var(--err)');stopCam(k);return;}
@@ -490,42 +570,46 @@ function toggleCam(k,mode){
     var last='';
     Quagga.onDetected(function(d){
       var code=d.codeResult.code;
-      // YALNIZ düzgün format
       if(!isValidBarcode(code))return;
-      // Təkrar scan etmə (2 saniyə)
       if(code===last)return;
       last=code;setTimeout(function(){last=''},2000);
-      var num=parseNum(code);
-      if(mode==='bulk'){
-        showScanAlert(num,function(){addBulkCode(code);});
-      }else if(mode==='single'){
-        stopCam(k);
-        document.getElementById('inp-s').value=code;
-        showScanAlert(num,function(){doSingle();});
-      }else if(mode==='diag'){
-        stopCam(k);
-        document.getElementById('inp-d').value=num;
-        showScanAlert(num,function(){doDiagCheck();});
-      }else if(mode==='diag-deliver'){
-        stopCam(k);
-        document.getElementById('inp-dd').value=num;
-        showScanAlert(num,function(){addDiagItem();});
-      }else if(mode==='check'){
-        stopCam(k);
-        document.getElementById('inp-check').value=num;
-        showScanAlert(num,function(){doCheck();});
-      }
+      handleScan(code,k,mode);
     });
   });
 }
 
+// İşıq (flaş) düyməsi
+function addTorchButton(k,stream){
+  var track=stream.getVideoTracks()[0];
+  if(!track)return;
+  var caps=track.getCapabilities?track.getCapabilities():{};
+  if(!caps.torch)return;
+  var vid=document.getElementById('vid-'+k);
+  var btn=document.createElement('button');
+  btn.id='torch-'+k;
+  btn.innerHTML='<i class="ti ti-bulb"></i> İşıq yandır';
+  btn.style.cssText='width:100%;padding:10px;margin-bottom:8px;background:var(--d3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:DM Sans,sans-serif;cursor:pointer';
+  camTorch[k]=false;
+  btn.onclick=function(){
+    camTorch[k]=!camTorch[k];
+    track.applyConstraints({advanced:[{torch:camTorch[k]}]}).catch(function(){});
+    btn.style.background=camTorch[k]?'var(--gold)':'var(--d3)';
+    btn.style.color=camTorch[k]?'var(--dark)':'var(--text)';
+    btn.innerHTML=camTorch[k]?'<i class="ti ti-bulb-off"></i> İşıq söndür':'<i class="ti ti-bulb"></i> İşıq yandır';
+  };
+  vid.parentNode.insertBefore(btn,vid.nextSibling);
+}
+
 function stopCam(k){
   if(!cam[k])return;cam[k]=false;
+  if(camLoop){clearInterval(camLoop);camLoop=null;}
   if(typeof Quagga!=='undefined'){try{Quagga.stop()}catch(e){}}
   var vid=document.getElementById('vid-'+k);
   var box=document.getElementById('sb-'+k);
   if(vid){vid.style.display='none';
     try{if(vid.srcObject){vid.srcObject.getTracks().forEach(function(t){t.stop()});vid.srcObject=null}}catch(e){}}
+  if(camStream){try{camStream.getTracks().forEach(function(t){t.stop()})}catch(e){}camStream=null;}
+  var tb=document.getElementById('torch-'+k);if(tb)tb.remove();
   if(box)box.style.display='block';
 }
 
