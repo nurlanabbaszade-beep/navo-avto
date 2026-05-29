@@ -45,6 +45,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);font-size:14px;overscrol
 .icd{background:rgba(52,152,219,.15);color:#3498db}
 .icc{background:rgba(46,204,113,.15);color:var(--ok)}
 .ict{background:rgba(155,89,182,.15);color:#9b59b6}
+.icx{background:rgba(231,76,60,.15);color:#e74c3c}
 
 .back{display:inline-flex;align-items:center;gap:6px;background:var(--d3);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;color:var(--t2);cursor:pointer;margin-bottom:14px;font-family:'DM Sans',sans-serif;border:none}
 .back:active{background:var(--d4)}
@@ -72,6 +73,7 @@ video{width:100%;height:280px;object-fit:cover;border-radius:var(--r);margin-bot
 .ibtn{padding:11px 15px;background:var(--gold);color:var(--dark);border:none;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;-webkit-appearance:none}
 .ibtn:active{filter:brightness(1.1)}
 .ibtn.dk{background:var(--d3);color:var(--text);border:1px solid var(--border)}
+.ibtn.red{background:var(--err);color:#fff}
 
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:4px}
 .chip{background:var(--d3);border:1px solid var(--border2);border-radius:20px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:5px}
@@ -189,6 +191,10 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
         <div class="mcard" onclick="go('today')">
           <div class="mic ict"><i class="ti ti-calendar-check"></i></div>
           <h3>Bugün Scan Edilənlər</h3><p>Günlük log</p>
+        </div>
+        <div class="mcard" onclick="go('cancel')">
+          <div class="mic icx"><i class="ti ti-trash"></i></div>
+          <h3>Sifarişi Ləğv Et</h3><p>Sətri sistemdən sil</p>
         </div>
       </div>
     </div>
@@ -367,6 +373,23 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
       <div id="todayres"></div>
     </div>
 
+    <!-- CANCEL -->
+    <div id="s-cancel" class="scr">
+      <button class="back" onclick="go('home');stopCam('cn')"><i class="ti ti-arrow-left"></i> Geri</button>
+      <div class="plabel">Ləğv etmə</div>
+      <div class="ptitle">Sifarişi Ləğv Et</div>
+      <div class="scanbox" id="sb-cn" onclick="toggleCam('cn','cancel')">
+        <i class="ti ti-camera"></i><p>Kameranı aktivləşdir</p>
+        <small>Barkodu kameraya yaxınlaşdırın</small>
+      </div>
+      <video id="vid-cn" playsinline autoplay muted></video>
+      <div class="irow">
+        <input id="inp-cn" placeholder="Sifariş nömrəsi..." onkeydown="if(event.key==='Enter')doCancel()">
+        <button class="ibtn red" onclick="doCancel()">Ləğv et</button>
+      </div>
+      <div id="cancelres"></div>
+    </div>
+
   </div>
 </div>
 
@@ -381,6 +404,22 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
     <div class="cbrow">
       <button class="cbtn" onclick="closeOvl()">Ləğv et</button>
       <button class="cbtn ok" onclick="doAccept()">Təsdiqlə</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM -->
+<div class="ovl" id="cancel-ovl">
+  <div class="cbox">
+    <div class="chandle"></div>
+    <h3 style="color:var(--err)"><i class="ti ti-alert-triangle"></i> Diqqət — Ləğv etmə</h3>
+    <div class="csub" style="margin-bottom:16px;line-height:1.5">
+      <b id="cancel-num-txt" style="font-family:'DM Mono',monospace;color:var(--text)">—</b>
+      nömrəli sifariş ləğv edilir və sətir sistemdən silinir.
+    </div>
+    <div class="cbrow">
+      <button class="cbtn" onclick="closeCancelOvl()">İmtina et</button>
+      <button class="cbtn" style="background:var(--err);color:#fff;border-color:var(--err)" onclick="confirmCancel()">Təsdiq et</button>
     </div>
   </div>
 </div>
@@ -425,7 +464,7 @@ fetch(API+'?action=ping').then(function(r){return r.json()}).then(function(){
 // NAVİGASİYA — sadə display:none/block
 function go(sc){
   // kameraları saxla
-  var camMap={'bulk':'b','single':'s','diag-check':'d','diag-deliver':'dd','check':'c'};
+  var camMap={'bulk':'b','single':'s','diag-check':'d','diag-deliver':'dd','check':'c','cancel':'cn'};
   if(camMap[cur])stopCam(camMap[cur]);
   document.getElementById('s-'+cur).classList.remove('active');
   document.getElementById('s-'+sc).classList.add('active');
@@ -496,6 +535,9 @@ function handleScan(code,k,mode){
   }else if(mode==='check'){
     stopCam(k);document.getElementById('inp-check').value=num;
     showScanAlert(num,function(){doCheck();});
+  }else if(mode==='cancel'){
+    stopCam(k);document.getElementById('inp-cn').value=num;
+    showScanAlert(num,function(){doCancel();});
   }
   return true;
 }
@@ -659,20 +701,30 @@ function renderBulk(){
     '</select></td>'+
     '<td>'+(isRefuse
       ? '<input class="ntxt" placeholder="Səbəb..." oninput="bulk['+i+'].note=this.value" value="'+(o.note||'')+'">'
-      : '<select class="nsel" onchange="bulk['+i+'].note=this.value">'+
+      : o.noteDiger
+        ? '<input class="ntxt" placeholder="Qeyd yazın..." oninput="bulk['+i+'].note=this.value" value="'+(o.note||'')+'">'
+        : '<select class="nsel" onchange="onBulkNoteChange('+i+',this.value)">'+
         '<option value="">—</option>'+
         '<option '+(o.note==='Take Rate'?'selected':'')+'>Take Rate</option>'+
         '<option '+(o.note==='Yarımçıq qayıtdı'?'selected':'')+'>Yarımçıq qayıtdı</option>'+
         '<option '+(o.note==='Korlanıb'?'selected':'')+'>Korlanıb</option>'+
         '<option '+(o.note==='Çek yoxdur'?'selected':'')+'>Çek yoxdur</option>'+
-        '<option '+(o.note==='Digər'?'selected':'')+'>Digər</option>'+
+        '<option value="__diger__">Digər (özün yaz)</option>'+
         '</select>'
     )+'</td></tr>';
   }).join('');
 }
 
 function onBulkStatusChange(i,val){
-  bulk[i].status=val;bulk[i].note='';renderBulk();
+  bulk[i].status=val;bulk[i].note='';bulk[i].noteDiger=false;renderBulk();
+}
+function onBulkNoteChange(i,val){
+  if(val==='__diger__'){
+    bulk[i].noteDiger=true;bulk[i].note='';
+  }else{
+    bulk[i].noteDiger=false;bulk[i].note=val;
+  }
+  renderBulk();
 }
 function rmBulk(i){bulk.splice(i,1);renderBulk();}
 function updSel(){document.getElementById('selcnt').textContent=bulk.filter(function(x){return x.checked}).length;}
@@ -944,6 +996,57 @@ function renderCheckResults(list,res,count){
 function jumpToDetail(num){
   document.getElementById('inp-d').value=num;
   go('diag-check');doDiagCheck();
+}
+
+// ── SİFARİŞİ LƏĞV ET ────────────────────────────────────────────────
+var cancelNum='';
+function doCancel(){
+  var raw=document.getElementById('inp-cn').value.trim();
+  var res=document.getElementById('cancelres');
+  if(!raw){toast('Nömrə daxil edin','var(--err)');return;}
+  var num=parseNum(raw)||raw;
+  res.innerHTML='<div class="loader"><div class="spin"></div>Yoxlanılır...</div>';
+  // Əvvəlcə sifarişi tap və göstər
+  callGet('checkOrder&orderNum='+encodeURIComponent(num),function(r){
+    if(r&&r.found){
+      var o=r.order;
+      var mp=o.mehsullar&&o.mehsullar.length
+        ?o.mehsullar.map(function(m,i){return '<div>'+(i+1)+'. '+m+'</div>'}).join(''):'—';
+      res.innerHTML='<div class="icard">'+
+        ir('Sifariş №','<span style="font-family:\'DM Mono\',monospace">'+o.num+'</span>')+
+        ir('Məhsullar','<div style="text-align:right;font-size:12px">'+mp+'</div>')+
+        ir('Qiymət',o.qiymet?(o.qiymet+' AZN'):'—')+
+        ir('Tarix',o.tarix||'—')+
+        ir('Cari Status','<span class="bdg '+(o.qaytardi?'by':'bgr')+'">'+(o.qaytardi||o.status||'—')+'</span>')+
+      '</div>'+
+      '<button class="abtn red" style="margin-top:10px" onclick="showCancelConfirm(\''+num+'\')">'+
+        '<i class="ti ti-trash"></i> Qəbul et — Ləğv et</button>';
+    }else if(r){
+      res.innerHTML='<div class="icard"><div class="irow2"><span style="color:var(--warn)">Sifariş tapılmadı: '+num+'</span></div></div>';
+    }else{
+      res.innerHTML='<div class="icard"><div class="irow2"><span style="color:var(--err)">Xəta baş verdi</span></div></div>';
+    }
+  });
+}
+
+function showCancelConfirm(num){
+  cancelNum=num;
+  document.getElementById('cancel-num-txt').textContent=num;
+  document.getElementById('cancel-ovl').classList.add('show');
+}
+function closeCancelOvl(){document.getElementById('cancel-ovl').classList.remove('show');}
+
+function confirmCancel(){
+  closeCancelOvl();
+  var num=cancelNum;
+  toast('Silinir...','var(--warn)');
+  callPost({action:'cancelOrder',orderNum:num},function(r){
+    if(r&&r.success){
+      toast(r.message||num+' ləğv edildi ✓');
+      document.getElementById('cancelres').innerHTML='';
+      document.getElementById('inp-cn').value='';
+    }else toast('Xəta: '+(r&&r.error||'bilinmir'),'var(--err)');
+  });
 }
 
 function ir(l,v){
